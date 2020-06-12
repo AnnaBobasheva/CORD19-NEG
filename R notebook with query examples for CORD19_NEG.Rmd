@@ -1,8 +1,8 @@
 ---
 title: "Accessing CORD19-NEKG dataset in R"
 output:
-  pdf_document: default
   html_notebook: default
+  pdf_document: default
 ---
 
 This notebook demonstartes how to access and query *CORD-19 Named Entities Knowledge Graph (CORD19-NEKG)* RDF dataset [1]. The dataset describes named entities identified in the scholarly articles of the [COVID-19 Open Research Dataset (CORD-19)](https://pages.semanticscholar.org/coronavirus-research) [2], a resource of over 47,000 articles about COVID-19 and the coronavirus family of viruses.
@@ -18,7 +18,7 @@ When including CORD19-NEKG data in a publication or redistribution, please cite 
 
 R. Gazzotti, F. Michel, F. Gandon. CORD-19 Named Entities Knowledge Graph (CORD19-NEKG). University Côte d'Azur, Inria, CNRS. 2020. Retrieved from https://github.com/Wimmics/cord19-nekg.
 
-```{r}
+```{r  warning=FALSE, , message=FALSE}
 library(SPARQL)
 ```
 
@@ -139,7 +139,7 @@ where {
       UNION
 
       { ?dis1 wdt:P31 ?entity1; 
-              rdfs:label ?dis1Label. }  # ?dis1 is an instance of "cancer" or a subclass thereof
+              rdfs:label ?dis1Label. }  # ?dis1 is an instance of "cancer" or a subclass
 
 
 
@@ -156,7 +156,7 @@ where {
       UNION
 
       { ?dis2 wdt:P31 ?entity2; 
-              rdfs:label ?dis2Label. }  # ?dis2 is an instance of "Coronaviridae" or a subclass thereof
+              rdfs:label ?dis2Label. }  # ?dis2 is an instance of "Coronaviridae" or a subclass
 
     }
 
@@ -189,7 +189,7 @@ res <- data.frame(lapply(res, function(x) {
 ```
 #### Visualize query results in different ways
 Plot hierarchically-clustered heatmap
-```{r fig.width = 12, fig.height = 7, fig.align = "center"}
+```{r fig.width = 14, fig.height = 7, fig.align = "left"}
 
 hm <- table(res[, c('dis2Label','dis1Label')])
 hm <- as.matrix(hm)
@@ -201,10 +201,11 @@ heatmap(hm,  margins = c(15,0), #Rowv = NA, Colv = NA,
         cexRow = 0.9,
         main="Co-occurrences of the diseases in the articles",
         xlab="cancers", 
-        ylab="coronaviruses")
+        ylab="coronaviruses",
+        keep.dendro=FALSE)
 ```
 Plot heatmap with ggplot
-```{r}
+```{r warning=FALSE, , message=FALSE}
 library(ggplot2)
 ```
 
@@ -262,7 +263,7 @@ my_colors <- c(colors()[254:256], #greens
                colors()[589:591], #blues
                colors()[258], colors()[592], colors()[258:259] )
 
-names(my_colors) <- levels(res$dis2Label)
+names(my) <- levels(res$dis2Label)
 
 ggplot(res, 
        aes(x = dis1Label, 
@@ -290,6 +291,52 @@ ggplot(res,
   xlab("cancers") + 
   ylab("count") +
   labs(fill = "coronaviruses")
+```
+
+```{r}
+query_vitamin_D = '
+
+select    ?src ?type ?exact ?start ?end ?val
+
+where {
+
+  graph <http://ns.inria.fr/covid19/graph/entityfishing> {
+
+    ?ent oa:hasBody <http://www.wikidata.org/entity/Q175621>.
+
+    ?ent oa:hasTarget ?tar.
+
+    ?tar oa:hasSource  ?src;
+
+         oa:hasSelector ?sel.
+
+    ?sel a ?type;
+
+         oa:exact ?exact;
+
+         oa:start ?start;
+
+         oa:end ?end.
+
+  }
+
+  graph <http://ns.inria.fr/covid19/graph/articles> {
+
+    ?src rdf:value ?val.
+
+  }
+
+}
+
+'
+```
+
+```{r}
+res1 <- SPARQL(url= endpoint,
+              query = query_vitamin_D,
+              ns=prefix,
+              extra=NULL)$results
+
 ```
 
 
